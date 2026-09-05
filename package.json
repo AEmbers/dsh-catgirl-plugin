@@ -33,7 +33,7 @@
     "pack:check": "npm pack --dry-run"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.1"
+    "@deepseek-ai/schemastery": "^3.18.2"
   },
   "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
 }
