@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 - Unreleased
+## 0.2.0 - 2026-09-05
 
 - Share one Markdown-safe decoration core between headless and Web renderers.
 - Keep the terminal kaomoji hidden until Web streaming completes.
