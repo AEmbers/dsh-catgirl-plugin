@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix client
+      - run: npm test
+      - run: npm run --prefix client test
+      - run: npm run --prefix client typecheck
+      - run: npm run --prefix client build
+      - name: Verify tag and package versions
+        run: node -e "const tag=process.env.GITHUB_REF_NAME.slice(1); const root=require('./package.json').version; const client=require('./client/package.json').version; if(tag!==root||root!==client) throw new Error('tag, root, and client versions must match')"
+      - name: Verify npm credentials
+        run: test -n "$NODE_AUTH_TOKEN" || { echo 'Repository secret NPM_TOKEN is required'; exit 1; }
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --provenance --access public
+        working-directory: client
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}

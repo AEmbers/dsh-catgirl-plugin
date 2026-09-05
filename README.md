@@ -116,7 +116,7 @@ dsh plugin --profile demo add dsh-catgirl-plugin
     - id: catgirl-economy
       name: dsh-catgirl-plugin/catgirl-economy
       config:
-        allow: [bash, read, write, edit, glob, grep, str_replace_editor, todo_write]
+        profile: coding
 ```
 
 Web UI 渲染（可选）：安装 `dsh-catgirl-plugin-client` 并加入 profile patch：
@@ -138,51 +138,52 @@ Web UI 渲染（可选）：安装 `dsh-catgirl-plugin-client` 并加入 profile
 | `index.js` | 传统长 persona（对比用） | 每请求 +数百 |
 | `usage-meter.js` | 开发工具：usage 记录 | 0 |
 
-## RoadMap（V2）
+## 工具档位
 
-- **工具档位切换**（Coding / Normal / Chat）：按任务类型自动选工具集
-- **Reasoning Router**：社交对话关 reasoning，复杂任务开 high/max（收益最大，风险也最大）
-- **纯聊天档**：只留 2-3 个工具
-- **自适应工具披露**：按任务类型预判解锁
-- **Web UI 状态机**：agent 生命周期 → 猫娘状态，0 LLM token
+| `profile` | 初始工具 | 用途 |
+|---|---|---|
+| `coding` | 编辑、文件、搜索和 todo | 默认，适合开发任务 |
+| `normal` | 读取、搜索和 Web | 调研与日常助手 |
+| `chat` | 无全局工具 | 纯对话，需要时通过 `enable_tool` 解锁 |
+
+`allow` 设置后会覆盖档位，包括显式空列表；`escalatable` 可自定义允许按需解锁的工具。插件会过滤当前 profile 中未安装的初始工具，避免启动失败。
+
+## 后续方向
+
+- Reasoning Router 需要先建立跨模型质量基线，不默认自动开启
+- 按任务类型预判工具档位，保留显式配置作为回退
+- 把 agent 生命周期映射为更完整的 Web UI 状态
 
 ## 已知限制
 
 - **headless 一次性进程不等待后台 subagent**：`run_in_background: true` 的子代理在父进程退出时被终止（headless 应用限制，Web UI 无此问题）；同步模式完整可用
-- **npm registry 的 rc 包依赖链损坏**：`dsh-client-runtime` 依赖未发布的 `dsh-compact`，构建客户端包需从 harness checkout 链接依赖（见 [开发](#开发)）
 - **`nya` 工具输出随机**（`Math.random()`），不适合快照测试
 - **人设文案为中文单语**：`INTENSITY_TEXT` 在 `index.js`，可自行修改或通过 `traits` 扩展
 
 ## 开发
 
 ```sh
-npm install
-npm test                       # 人设、工具解锁、渲染与客户端单元测试
-npm run test:composition       # 真实 Loader 组合测试（需 deepseek-harness 已构建）
-npm run pack:check             # 检查 npm 发布内容
+npm ci && npm test && npm run pack:check
+npm ci --prefix client
+npm run --prefix client typecheck
+npm run --prefix client build
+npm run --prefix client pack:check
 ```
 
-`overlays/` 下的测试 overlay 含绝对路径，使用前请替换为你的 checkout 路径。
-
-<details>
-<summary>构建客户端插件（npm registry 依赖链损坏，需从 harness checkout 链接）</summary>
+真实 Loader 组合测试通过环境变量指向已构建的 Harness：
 
 ```sh
-cd client
-npm install react tsdown typescript @types/react@18.3.31 --no-audit --no-fund
-mkdir -p node_modules/@deepseek-ai
-ln -s <harness>/packages/attachment/attachment node_modules/@deepseek-ai/dsh-attachment
-ln -s <harness>/packages/client/runtime node_modules/@deepseek-ai/dsh-client-runtime
-ln -s <harness>/packages/client/ui-attachment node_modules/@deepseek-ai/dsh-client-ui-attachment
-ln -s <harness>/packages/client/ui-conversation node_modules/@deepseek-ai/dsh-client-ui-conversation
-ln -s <harness>/packages/client/ui-primitives node_modules/@deepseek-ai/dsh-client-ui-primitives
-ln -s <harness>/packages/client/ui-slots node_modules/@deepseek-ai/dsh-client-ui-slots
-ln -s <harness>/vendor/cordis node_modules/@deepseek-ai/cordis
-npx tsc --noEmit && npx tsdown
-npx tsc src/index.ts --outDir lib --module esnext --target es2022 --moduleResolution bundler --skipLibCheck
+DSH_HARNESS_PATH=/path/to/deepseek-harness npm run test:composition
 ```
 
-</details>
+质量实验会将 usage、输出、overlay 和机器可读元数据写入同一目录：
+
+```sh
+DSH_BIN=/path/to/dsh BENCHMARK_OUTPUT_DIR=/tmp/bench \
+  npm run test:quality -- quicksort lite "写快速排序并运行测试"
+```
+
+`overlays/` 使用 npm 包路径，不包含个人机器绝对路径。根包与客户端保持同版本；显式推送 `v*` tag 时，Release workflow 才会发布 npm 包并创建 GitHub Release。首次发布前需在仓库中配置 `NPM_TOKEN` Secret。
 
 ## License
 

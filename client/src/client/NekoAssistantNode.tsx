@@ -6,7 +6,6 @@
 import { memo, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
-import type { AssistantBlock } from '@deepseek-ai/dsh-client-runtime/client'
 import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
 import { ImageGallery, type ImageLoader, type MessageImageLabels } from '@deepseek-ai/dsh-client-ui-attachment'
 import type { ChatNodeViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -49,7 +48,7 @@ export const NekoAssistantNode = memo(function NekoAssistantNode({
         rendered.push(
           <MarkdownText
             key={i}
-            text={decorate(block.text)}
+            text={decorate(block.text, { final: !streaming && !interrupted })}
             streaming={streaming}
             codeLabels={codeLabels}
           />,

@@ -1,5 +1,5 @@
 // catgirl-economy 单元测试：验证白名单切换与失败回滚。
-import { apply, Config } from './catgirl-economy.js'
+import { apply, Config, resolveInitialAllow } from './catgirl-economy.js'
 
 let failed = 0
 function check(label, condition) {
@@ -16,6 +16,9 @@ const registered = []
 let handler
 
 const tools = {
+  schemas() {
+    return [...known].map(name => ({ name }))
+  },
   restrict({ allow }) {
     const unknown = allow.filter(name => !known.has(name))
     if (unknown.length) throw new Error(`unknown global tool ${unknown.join(', ')}`)
@@ -46,6 +49,13 @@ handler({ agent })
 
 check('one initial restriction is active', active.size === 1)
 check('default allow-list is deduplicated and applied', [...active][0].allow.length === 8)
+check('normal profile resolves explicitly', resolveInitialAllow(Config({ profile: 'normal' })).includes('web_search'))
+check('chat profile starts without global tools', resolveInitialAllow(Config({ profile: 'chat' })).length === 0)
+check('custom allow overrides profile', resolveInitialAllow(Config({ profile: 'chat', allow: ['read', 'read'] })).join(',') === 'read')
+check('explicit empty allow overrides profile', resolveInitialAllow(Config({ allow: [] })).length === 0)
+let invalidProfile = false
+try { Config({ profile: 'automatic' }) } catch { invalidProfile = true }
+check('invalid profile fails loud', invalidProfile)
 check('enable_tool is registered in the agent scope', registered.length === 1 && registered[0].name === 'enable_tool')
 
 const enableTool = registered[0]
@@ -58,6 +68,23 @@ check('missing profile tool fails gracefully', await enableTool.execute({ name: 
 check('failed unlock restores previous restriction', active.size === 1 && [...active][0].allow.includes('subagent') && ![...active][0].allow.includes('web_fetch'))
 check('state remains usable after failed unlock', await enableTool.execute({ name: 'web_search' }) === 'Tool web_search is now enabled for this session.')
 check('later valid unlock keeps earlier unlocks', [...active][0].allow.includes('subagent') && [...active][0].allow.includes('web_search'))
+
+let sparseAllow
+const sparseAgent = {
+  ctx: {
+    tools: {
+      schemas: () => [{ name: 'read' }],
+      restrict({ allow }) {
+        sparseAllow = allow
+        return () => {}
+      },
+      register: () => () => {},
+    },
+    effect(effect) { return effect() },
+  },
+}
+handler({ agent: sparseAgent })
+check('unavailable profile tools are filtered at startup', sparseAllow.join(',') === 'read')
 
 if (failed) { console.error(`\n${failed} check(s) failed`); process.exit(1) }
 console.log('\nall economy checks passed')

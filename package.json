@@ -1,6 +1,6 @@
 {
   "name": "dsh-catgirl-plugin",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Token-efficient catgirl persona runtime for DeepSeek Harness",
   "license": "MIT",
   "type": "module",
@@ -9,6 +9,7 @@
     ".": "./index.js",
     "./catgirl-lite": "./catgirl-lite.js",
     "./catgirl-economy": "./catgirl-economy.js",
+    "./decorate-core": "./decorate-core.js",
     "./neko-renderer": "./neko-renderer.js",
     "./usage-meter": "./usage-meter.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
@@ -26,10 +27,11 @@
     "url": "https://github.com/Freakz2z/dsh-catgirl-plugin/issues"
   },
   "keywords": ["deepseek", "dsh", "plugin", "persona", "catgirl", "token-optimization"],
-  "files": ["index.js", "catgirl-lite.js", "catgirl-economy.js", "neko-renderer.js", "usage-meter.js", "cordis.patch.yml"],
+  "files": ["CHANGELOG.md", "index.js", "catgirl-lite.js", "catgirl-economy.js", "decorate-core.js", "decorate-core.d.ts", "neko-renderer.js", "usage-meter.js", "cordis.patch.yml"],
   "scripts": {
-    "test": "node smoke-test.mjs && node economy-test.mjs && node renderer-test.mjs && node client/decorate-test.mjs",
+    "test": "node smoke-test.mjs && node economy-test.mjs && node renderer-test.mjs && node client/decorate-test.mjs && node decorate-parity-test.mjs",
     "test:composition": "node composition-test.mjs",
+    "test:quality": "node run-quality-test.mjs",
     "pack:check": "npm pack --dry-run"
   },
   "dependencies": {

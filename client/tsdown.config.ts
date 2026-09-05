@@ -25,14 +25,16 @@ export default defineConfig({
   platform: 'browser',
   dts: false,
   sourcemap: true,
-  clean: false,
-  external: EXTERNALS,
+  clean: true,
+  deps: {
+    neverBundle: EXTERNALS,
+    alwaysBundle: (id: string) => (EXTERNALS.includes(id) ? undefined : true),
+  },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
     'import.meta.env.MODE': JSON.stringify(process.env.NODE_ENV ?? 'production'),
     'import.meta.env': JSON.stringify({ MODE: process.env.NODE_ENV ?? 'production' }),
   },
-  noExternal: (id: string) => (EXTERNALS.includes(id) ? undefined : true),
   outputOptions: {
     entryFileNames: 'client.js',
     banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(ID)}, factory: (require) => {`,

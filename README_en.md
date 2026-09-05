@@ -116,7 +116,7 @@ Then add to the profile patch:
     - id: catgirl-economy
       name: dsh-catgirl-plugin/catgirl-economy
       config:
-        allow: [bash, read, write, edit, glob, grep, str_replace_editor, todo_write]
+        profile: coding
 ```
 
 Web UI rendering (optional): install `dsh-catgirl-plugin-client` and add it to the profile patch:
@@ -138,51 +138,52 @@ Web UI rendering (optional): install `dsh-catgirl-plugin-client` and add it to t
 | `index.js` | traditional long persona (for comparison) | +hundreds per request |
 | `usage-meter.js` | dev tool: records usage | 0 |
 
-## RoadMap (V2)
+## Tool profiles
 
-- **Tool profile switching** (Coding / Normal / Chat): pick the tool set by task type
-- **Reasoning Router**: reasoning off for social chat, high/max for complex tasks (biggest win, biggest risk)
-- **Chat-only tier**: keep just 2-3 tools
-- **Adaptive tool disclosure**: predict unlocks by task type
-- **Web UI state machine**: agent lifecycle → catgirl states, 0 LLM tokens
+| `profile` | Initial tools | Use case |
+|---|---|---|
+| `coding` | editing, files, search, and todo | Default for development work |
+| `normal` | reading, search, and Web | Research and general assistance |
+| `chat` | no global tools | Conversation; unlock tools with `enable_tool` when needed |
+
+When set, `allow` overrides the profile, including an explicit empty list. Use `escalatable` to control which tools may be unlocked on demand. Tools missing from the active DSH profile are filtered at startup instead of crashing agent creation.
+
+## Future direction
+
+- Add a Reasoning Router only after establishing cross-model quality baselines
+- Predict a tool profile by task while retaining explicit configuration as the fallback
+- Map the agent lifecycle to a richer Web UI state
 
 ## Known Limitations
 
 - **Headless one-shot does not wait for background subagents**: `run_in_background: true` children are killed on parent exit (headless app limitation, not the plugin; sync mode works)
-- **npm registry rc packages have a broken dep chain**: `dsh-client-runtime` depends on unpublished `dsh-compact`; building the client package requires linking from a harness checkout (see [Development](#development))
 - **`nya` tool output is random** (`Math.random()`), unsuitable for snapshot tests
 - **Persona text is Chinese-only**: edit `INTENSITY_TEXT` in `index.js` or extend via `traits`
 
 ## Development
 
 ```sh
-npm install
-npm test                       # persona, tool-unlock, renderer, and client unit tests
-npm run test:composition       # real Loader composition test (needs a built deepseek-harness checkout)
-npm run pack:check             # inspect the npm package contents
+npm ci && npm test && npm run pack:check
+npm ci --prefix client
+npm run --prefix client typecheck
+npm run --prefix client build
+npm run --prefix client pack:check
 ```
 
-The test overlays under `overlays/` contain absolute paths; replace them with your checkout path before use.
-
-<details>
-<summary>Building the client plugin (npm registry chain is broken; link deps from a harness checkout)</summary>
+Point the real Loader composition test at a built Harness checkout:
 
 ```sh
-cd client
-npm install react tsdown typescript @types/react@18.3.31 --no-audit --no-fund
-mkdir -p node_modules/@deepseek-ai
-ln -s <harness>/packages/attachment/attachment node_modules/@deepseek-ai/dsh-attachment
-ln -s <harness>/packages/client/runtime node_modules/@deepseek-ai/dsh-client-runtime
-ln -s <harness>/packages/client/ui-attachment node_modules/@deepseek-ai/dsh-client-ui-attachment
-ln -s <harness>/packages/client/ui-conversation node_modules/@deepseek-ai/dsh-client-ui-conversation
-ln -s <harness>/packages/client/ui-primitives node_modules/@deepseek-ai/dsh-client-ui-primitives
-ln -s <harness>/packages/client/ui-slots node_modules/@deepseek-ai/dsh-client-ui-slots
-ln -s <harness>/vendor/cordis node_modules/@deepseek-ai/cordis
-npx tsc --noEmit && npx tsdown
-npx tsc src/index.ts --outDir lib --module esnext --target es2022 --moduleResolution bundler --skipLibCheck
+DSH_HARNESS_PATH=/path/to/deepseek-harness npm run test:composition
 ```
 
-</details>
+Quality runs write usage, output, overlay, and machine-readable metadata artifacts into one directory:
+
+```sh
+DSH_BIN=/path/to/dsh BENCHMARK_OUTPUT_DIR=/tmp/bench \
+  npm run test:quality -- quicksort lite "write quicksort and run its tests"
+```
+
+The files under `overlays/` use npm package paths and contain no machine-specific absolute paths. Root and client packages stay on the same version. The Release workflow publishes both npm packages and creates a GitHub Release only when a `v*` tag is explicitly pushed. Configure the repository `NPM_TOKEN` secret before the first release.
 
 ## License
 

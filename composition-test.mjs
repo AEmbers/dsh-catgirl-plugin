@@ -3,16 +3,40 @@
 // 前置条件：deepseek-harness 已 `pnpm install && pnpm run build`。
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
-import { Context } from '../deepseek-harness/vendor/cordis/lib/index.js'
-import Loader from '../deepseek-harness/vendor/loader/lib/index.js'
-import Include from '../deepseek-harness/vendor/include/lib/index.js'
-import SystemPrompt from '../deepseek-harness/packages/core/system-prompt/lib/index.js'
-import ToolRuntime from '../deepseek-harness/packages/core/tools/lib/index.js'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import * as catgirl from './index.js'
 
-const PLUGIN_PATH = new URL('./index.js', import.meta.url).pathname
+const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url))
+const HARNESS_ROOT = resolve(process.env.DSH_HARNESS_PATH ?? join(PROJECT_ROOT, '..', 'deepseek-harness'))
+const harnessModule = path => import(pathToFileURL(join(HARNESS_ROOT, path)).href)
+
+let Context
+let Loader
+let Include
+let SystemPrompt
+let ToolRuntime
+try {
+  ;([
+    { Context },
+    { default: Loader },
+    { default: Include },
+    { default: SystemPrompt },
+    { default: ToolRuntime },
+  ] = await Promise.all([
+    harnessModule('vendor/cordis/lib/index.js'),
+    harnessModule('vendor/loader/lib/index.js'),
+    harnessModule('vendor/include/lib/index.js'),
+    harnessModule('packages/core/system-prompt/lib/index.js'),
+    harnessModule('packages/core/tools/lib/index.js'),
+  ]))
+} catch {
+  console.error(`Built deepseek-harness not found at ${HARNESS_ROOT}`)
+  console.error('Set DSH_HARNESS_PATH to a checkout after running pnpm install && pnpm run build.')
+  process.exit(2)
+}
+
+const PLUGIN_PATH = fileURLToPath(new URL('./index.js', import.meta.url))
 
 let failed = 0
 function check(label, cond) {

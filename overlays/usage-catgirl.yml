@@ -1,10 +1,10 @@
 - insert:
     - id: usage-meter
-      name: '/Users/freakk/WorkSpace/Project/DSH/catgirl-plugin/usage-meter.js'
+      name: dsh-catgirl-plugin/usage-meter
       config:
         outputPath: /tmp/dsh-usage-catgirl.jsonl
     - id: catgirl
-      name: '/Users/freakk/WorkSpace/Project/DSH/catgirl-plugin/index.js'
+      name: dsh-catgirl-plugin
       config:
         name: 喵酱
         intensity: 2

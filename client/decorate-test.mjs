@@ -15,6 +15,8 @@ check('unclosed streaming fence untouched', decorate('结果：\n```js\nconsole.
 check('inline code untouched', decorate('命令：`echo 好！`。') === '命令：`echo 好！`。喵~ (｡･ω･｡)')
 check('multi-backtick inline code untouched', decorate('值：``a ` b！``。') === '值：``a ` b！``。喵~ (｡･ω･｡)')
 check('CRLF code fence untouched', decorate('```js\r\nconsole.log("好！")\r\n```\r\n') === '```js\r\nconsole.log("好！")\r\n``` (｡･ω･｡)')
+check('streaming output has no moving suffix', decorate('完成。', { final: false }) === '完成。喵~')
+check('streaming whitespace is preserved', decorate('完成。\n', { final: false }) === '完成。喵~\n')
 check('no punctuation still gets kaomoji', decorate('Done') === 'Done (｡･ω･｡)')
 check('trailing newline trimmed', decorate('完成。\n') === '完成。喵~ (｡･ω･｡)')
 check('english punctuation', decorate('All tests pass!') === 'All tests pass!喵~ (｡･ω･｡)')
