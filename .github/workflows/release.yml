@@ -29,14 +29,31 @@ jobs:
       - run: npm run --prefix client build
       - name: Verify tag and package versions
         run: node -e "const tag=process.env.GITHUB_REF_NAME.slice(1); const root=require('./package.json').version; const client=require('./client/package.json').version; if(tag!==root||root!==client) throw new Error('tag, root, and client versions must match')"
+      - name: Check npm registry
+        id: registry
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "dsh-catgirl-plugin@$version" version >/dev/null 2>&1; then
+            echo "root_needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "root_needed=true" >> "$GITHUB_OUTPUT"
+          fi
+          if npm view "dsh-catgirl-plugin-client@$version" version >/dev/null 2>&1; then
+            echo "client_needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "client_needed=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Verify npm credentials
+        if: steps.registry.outputs.root_needed == 'true' || steps.registry.outputs.client_needed == 'true'
         run: test -n "$NODE_AUTH_TOKEN" || { echo 'Repository secret NPM_TOKEN is required'; exit 1; }
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: npm publish --provenance --access public
+        if: steps.registry.outputs.root_needed == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: npm publish --provenance --access public
+        if: steps.registry.outputs.client_needed == 'true'
         working-directory: client
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
