@@ -1,6 +1,6 @@
 {
   "name": "dsh-catgirl-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Token-efficient catgirl persona runtime for DeepSeek Harness",
   "license": "MIT",
   "type": "module",
@@ -16,7 +16,8 @@
     "./package.json": "./package.json"
   },
   "engines": {
-    "node": "^22.19.0 || >=24.0.0"
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.0-rc.1"
   },
   "repository": {
     "type": "git",
@@ -37,5 +38,15 @@
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.2"
   },
-  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "compatibility": {
+      "dsh": ">=0.2.0-rc.1",
+      "dshReleases": {
+        "0.2.0-rc.1": "compatible",
+        "0.2.0-rc.2": "compatible",
+        "0.2.1-alpha.1": "compatible"
+      }
+    }
+  }
 }
